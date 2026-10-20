@@ -603,6 +603,65 @@ def ace_pad_array(data):
 
 
 """
+ACE EPAM FUNCTIONS:
+"""
+
+
+def get_ace_epam(filepath):
+    """
+    Load an ACE EPAM Level 2 text file into a pandas DataFrame.
+ 
+    The header is parsed to find the column names (the line just before
+    'BEGIN DATA'). The year, day-of-year, hour, minute and second columns
+    are combined into a single 'time' column (datetime64, UT, start of the
+    averaging interval) and used as the index. The value -999.9, which ACE
+    uses to flag bad or missing data, is converted to NaN.
+ 
+    Parameters
+    ----------
+    filepath : str or Path
+        Path to the ACE EPAM .txt file.
+ 
+    Returns
+    -------
+    pandas.DataFrame
+        Indexed by 'time', with the remaining data columns (e.g. DE1-DE4).
+    """
+    with open(filepath, "r") as f:
+        lines = f.readlines()
+ 
+    # Locate the data block and the column-name line just above it
+    data_start = next(i for i, l in enumerate(lines) if l.strip() == "BEGIN DATA") + 1
+    columns = lines[data_start - 2].split()
+ 
+    df = pd.read_csv(
+        filepath,
+        sep=r"\s+",
+        skiprows=data_start,
+        names=columns,
+        header=None,
+    )
+ 
+    # Build datetime from year + day-of-year + hr/min/sec.
+    # Day-of-year is 1-based, so day 1 -> Jan 1 00:00.
+    df["time"] = (
+        pd.to_datetime(df["year"].astype(int).astype(str), format="%Y")
+        + pd.to_timedelta(df["day"] - 1, unit="D")
+        + pd.to_timedelta(df["hr"], unit="h")
+        + pd.to_timedelta(df["min"], unit="m")
+        + pd.to_timedelta(df["sec"], unit="s")
+    )
+ 
+    df = df.drop(columns=["year", "day", "hr", "min", "sec"])
+    #df = df.set_index("time")
+ 
+    # ACE flags bad/missing data with -999.9
+    df = df.mask(df == -999.9)
+ 
+    return df
+
+
+"""
 ACE DATA SAVING FUNCTIONS:
 """
 
