@@ -78,6 +78,27 @@ def make_pos_recarray(df):
     return rarr
 
 
+def make_magplas_recarray(df):
+    time_stamps = df['time']
+    dt_lst= [element.to_pydatetime() for element in list(time_stamps)] #extract timestamps in datetime.datetime format
+    rarr=np.zeros(len(dt_lst),dtype=[('time',object),('bt', float),('bx', float),('by', float),('bz', float),\
+                                     ('vt', float),('vx', float),('vy', float),('vz', float),\
+                                     ('np', float),('tp', float)])
+    rarr = rarr.view(np.recarray)
+    rarr.time=dt_lst
+    rarr.bt=df['bt']
+    rarr.bx=df['bx']
+    rarr.by=df['by']
+    rarr.bz=df['bz']
+    rarr.vt=df['vt']
+    rarr.vx=df['vx']
+    rarr.vy=df['vy']
+    rarr.vz=df['vz']
+    rarr.np=df['np']
+    rarr.tp=df['tp']
+    return rarr
+
+
 def make_combined_recarray(df):
     #create rec array
     time_stamps = df['time']
