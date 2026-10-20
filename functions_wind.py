@@ -578,6 +578,50 @@ def wind_pad_array(epoch_arr, pangle_arr, flux_arr):
     return x_arr, y_arr, z_arr
 
 
+def get_wind3dp_sosp(fp):
+    try:
+        cdf = pycdf.CDF(fp)
+        flux_data = cdf["FLUX"][:]
+        flux_df = pd.DataFrame.from_dict(flux_data)
+        flux_df.mask((flux_df < -9.99e+30), inplace=True)
+        flux = flux_df.to_numpy()
+        bins = cdf["ENERGY"][0,:]
+        time = cdf["Epoch"][:]
+    except Exception as e:
+        print('ERROR:', e, fp)
+        time = None 
+        flux = None
+        bins = None 
+    return time, flux, bins
+
+
+def get_wind3dp_sosp_range(start_timestamp, end_timestamp, path=f'{wind_path}'+'3dp/sosp'):
+    """Pass two datetime objects and grab .cdf files between dates, from
+    directory given."""
+    time_arr  = np.empty((0,), dtype='datetime64[ns]') 
+    flux_arr = np.empty((0,9), dtype='float32')
+    bins_arr = np.empty((0,), dtype='<U25')
+    
+    start = start_timestamp.date()
+    end = end_timestamp.date() 
+    while start <= end:
+        date_str = f'{start.year}{start.month:02}{start.day:02}'
+        fn = glob.glob(f'{path}/wi_sosp_3dp_{date_str}_*.cdf')
+        time, flux, bins = get_wind3dp_sosp(fn[0])
+        time_arr  = np.concatenate((time_arr, time))
+        flux_arr = np.concatenate((flux_arr, flux))
+        bins_arr = bins
+        start += timedelta(days=1)
+    return time_arr, flux_arr, bins_arr
+
+
+def make_wind3dp_sosp_dataframes(time_arr, flux_arr, bins_arr, cadence=60):
+        df = pd.DataFrame(flux_arr, columns=bins_arr)
+        df['time'] = time_arr
+        df = df.set_index('time').resample(f'{cadence}min').mean().reset_index(drop=False)
+        return df
+
+
 """
 WIND POSITION FUNCTIONS:
 Wind has no spice kernels, but does have predicted orbit files including J2000 GCI, GSE, GSM, HEC
