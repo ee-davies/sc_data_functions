@@ -243,6 +243,8 @@ def create_juno_pkl(start_timestamp, end_timestamp, data_coord_sys = "RTN", pos_
 
     if data_coord_sys != "RTN":
         print("Juno data only available in RTN at the moment. Continuing to produce RTN data file...")
+    if pos_coord_sys == "HAE":
+        pos_coord_sys = "ECLIPJ2000"
 
     #create mag df, resampled to nearest 1 min
     df_mag = get_junomag_range(start_timestamp, end_timestamp)
@@ -265,9 +267,9 @@ def create_juno_pkl(start_timestamp, end_timestamp, data_coord_sys = "RTN", pos_
         plas_rdf = df_plas.set_index('time').resample('1min').mean().reset_index(drop=False)
         plas_rdf.set_index(pd.to_datetime(plas_rdf['time']), inplace=True)
         plas_rdf = plas_rdf.dropna() #need to drop NaN values for plotly...
-        plas_rdf['vx'] = pd.NA
-        plas_rdf['vy'] = pd.NA
-        plas_rdf['vz'] = pd.NA
+        plas_rdf['vx'] = np.nan
+        plas_rdf['vy'] = np.nan
+        plas_rdf['vz'] = np.nan
 
     #need to combine mag and plasma dfs to get complete set of timestamps for position calculation
     magplas_rdf = pd.concat([mag_rdf, plas_rdf], axis=1)
@@ -277,7 +279,7 @@ def create_juno_pkl(start_timestamp, end_timestamp, data_coord_sys = "RTN", pos_
 
     #get juno positions for corresponding timestamps
     juno_furnish()
-    juno_pos = get_juno_positions(magplas_rdf['time'], frame=pos_coord_sys)
+    juno_pos = get_juno_positions(magplas_rdf['time'], pos_coord_sys)
     juno_pos.set_index(pd.to_datetime(juno_pos['time']), inplace=True)
     juno_pos = juno_pos.drop(columns=['time'])
 
