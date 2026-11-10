@@ -55,12 +55,6 @@ def open_netcdf(filepath, show=True): #open file to see variables
     return ds
 
 
-# Differential proton channel names, in the order given in the file's
-# DiffProtonLowerEnergy / UpperEnergy descriptions
-PROTON_CHANNELS = ["P1", "P2A", "P2B", "P3", "P4", "P5", "P6",
-                   "P7", "P8A", "P8B", "P8C", "P9", "P10"]
-
-
 def get_sgps_proton_flux(fp):
     """
     Load AvgDiffProtonFlux for sensor unit 0 (-X, looks westward when the
